@@ -149,25 +149,21 @@ def sub_events(num_events,tot_area,beta,weight_type,weights="Random",stress="Ran
 
 	return stress_i,moment_i,radii_i,t_i_np,fc_i,rup_i,weight_mom,weight_area,moment_tot,sigma_tot_moment,sigma_tot_area
 	
-def sig_process(timeVal,momentRate,maxHz):
-	#### Process Function for FFT
-	dt = timeVal[-1]-timeVal[-2]
-	momentRate_pad = momentRate # now pad before this step #padfunc(momentRate) # Pad time series
-	t_pad = timeVal# now pad before this step  np.concatenate((timeVal,(max(timeVal)+dt*(1+np.arange((len(momentRate_pad) - len(timeVal))))))) # Pad time values
-	# momentRate_pad = momentRate # don't Pad time series
-# 	t_pad = timeVal # don't Pad time values
-	#### Perform fft
-	N = len(momentRate_pad)
-	freq = np.fft.rfftfreq(N, d = dt) ### Find frequency values
-	FT_momentRate  = np.fft.rfft(momentRate_pad)*dt #### Peform FFT
-	#### Trim the files to  Max N Hz
-	freq = freq[freq<=maxHz]
-	cutInt = len(freq)
-	freq = freq[1:] 
-	FT_momentRate = FT_momentRate[1:cutInt]
-	#### Analyze spectra
-	amplitude_FT = np.abs(FT_momentRate)
-	return (freq,amplitude_FT,FT_momentRate)
+def sig_process(timeVal,momentRate,HzBand):
+    #### Process Function for FFT
+    dt = timeVal[-1]-timeVal[-2]
+    #### Perform fft
+    N = len(momentRate)
+    freq = np.fft.rfftfreq(N, d = dt) ### Find frequency values
+    FT_momentRate  = np.fft.rfft(momentRate)*dt #### Peform FFT
+    #### Trim the files to  Hz Band
+    low_idx = np.searchsorted(freq, HzBand[0])
+    hi_idx = np.searchsorted(freq, HzBand[1])
+    freq = freq[low_idx:hi_idx]
+    FT_momentRate = FT_momentRate[low_idx:hi_idx]
+    #### Analyze spectra
+    amplitude_FT = np.abs(FT_momentRate)
+    return (freq,amplitude_FT,FT_momentRate)
 	
 	
 def sig_process_energy(timeVal,momentRate,maxHz):
