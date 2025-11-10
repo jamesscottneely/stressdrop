@@ -2,37 +2,41 @@
 
 #### This script plots stress drop histograms
 import numpy as np
-from matplotlib import pyplot as plt
 import pandas as pd
-import matplotlib.patches as mpatches
-from matplotlib import ticker, cm
-import matplotlib.colors as colors
 import stress_func as sf
-# import statsmodels.api as sm
-import scipy
+import scipy.optimize as optimize
 
 ### File
-eqdirs = 'FOLDER NAME WHERE SYNTHETIC EGFS STORED
-mag_dif = 1.5 # Minimum magnitude difference for earthquakes
+eqdirs = 'Brune_0.50SD_100HZ'
+mag_dif = 1.5# Minimum magnitude difference for earthquakes
 
 ### Read data
-path = 'ENTER DIRECTORY PATH to SAVE DATA' + eqdirs
-plotpath = 'ENTER DIRECTORY PATH to SAVE Plots'+ eqdirs
+path = '/Users/jamesneely/Documents/NSF/StressDrop_Bands/' + eqdirs
 eqfile = path+'/eqFile.txt'
 eqdata = pd.read_csv(eqfile,sep='|')
 eqdata.sort_values(by='mw_tot',ascending=False,inplace=True) # Sort in ascending order
-idx = 0
 
+###### Stress Drop Variables
+beta = 3600. # s-wave velocity m/s
+alpha = beta*np.sqrt(3) # p-wave velocity m/s
+rup_vel = .9*beta # rupture velocity
+ro = 2800 # density kg/m^3
+mu = .5*1e9 # shear modulus
+k = 0.37 # Shape factor brune calculation
+c = 1 # Constant for Fc to T conversion
+cval = (1/(15*np.pi*ro*(alpha**5))+(1/(10*np.pi*ro*(beta**5)))) # constant parameter
 
+##### Frequency Specific Variables
+log_samp = 0.025 # Log sampling for fitting spectral model
+HZ_Bands= [[.001,50],[.001,25],[.001,10],[.001,5],[.001,2]]
 
 ##### Create Out Pandas tables for data
-egf_table = pd.DataFrame(columns=['main_id','egf_id'])
-
-
+dataout_list = []
 count_id = 0
 tot_num = len(eqdata)
 plot_count = 0
 for index, row in eqdata.iterrows():
+	egf_table = {}
 	#### Find EGFs for smaller earthquakes
 	egf_IDs = eqdata[row['mw_tot']-eqdata['mw_tot']>=mag_dif].eq_id
 	print(" EQ {:.0f}/{:.0f}".format(count_id+1,tot_num))
@@ -44,49 +48,49 @@ for index, row in eqdata.iterrows():
 		samp_rate = STF_main['time'][1]
 		STF_main_FFT = np.fft.rfft(STF_main['STF'])*samp_rate # Convert to freq domain
 		Freq_fft = np.fft.rfftfreq(len(STF_main['time']),d=samp_rate)
-		ratio_array = np.zeros((len(Freq_fft),len(egf_IDs))) # Initialize array for stacking
+		ratio_array = np.zeros((len(egf_IDs),len(Freq_fft))) # Initialize array for stacking
 		egf_mom_array = np.zeros(len(egf_IDs)) # Initialize array for EGF moment average
 		#### Loop through EGF files
-		egf_idx = 0
 		for egf in egf_IDs:
-			print(egf_idx,'/',len(egf_IDs))
 			STF_egf = pd.read_csv(path+'/STFs/' +egf + ".txt")
 			#### Convert to frequency domain
 			STF_egf_FFT = np.fft.rfft(STF_egf['STF'])*samp_rate # Convert to freq domain
 			#### Spectral ratio
-			ratio = STF_main_FFT/STF_egf_FFT
+			ratio = np.abs(STF_main_FFT/STF_egf_FFT)
+			#### Fit Spectral Ratio
+			for Hz in HZ_Bands:
+				#### Trim the files to  Hz Band
+				low_idx = np.searchsorted(Freq_fft, Hz[0])
+				hi_idx = np.searchsorted(Freq_fft, Hz[1])
+				Freq_fft = Freq_fft[low_idx:hi_idx]
+				ratio = ratio[low_idx:hi_idx]
+				#### Resample in log space
+				freq_smooth, ratio_smooth = sf.resampSpec(Freq_fft,ratio, log_samp)
+				#### Fiting scenario 1: Assume known moment ratio
+				### Assume fixed decays of 2
+				initialGuess = [sf.brune_fc(beta, sf.brune_radii(row['moment_tot'], 1), k),
+								sf.brune_fc(beta, sf.brune_radii(eqdata[eqdata['eq_id'] == egf].moment_tot.item(), 1),
+								k)]  ## Provide initial guess assume Stress Drop = 1 MPa for initial guess
+				outvalMoFixed = optimize.least_squares(sf.ratio_bruneModInvMoFixed, initialGuess, bounds=(.00001, np.inf),
+											 args=(ratio_smooth, freq_smooth, row['moment_tot'],
+												   eqdata[eqdata['eq_id'] == egf].moment_tot.item()))
+				est_fc_MoFixed_Main = outvalMoFixed.x[0]
+				est_fc_MoFixed_EGF = outvalMoFixed.x[1]
+				sigma_fc_est_Mofix_Main = sf.stressCircfc(est_fc_MoFixed_Main, row['moment_tot'], k, beta) # main
+				sigma_fc_est_Mofix_EGF = sf.stressCircfc(est_fc_MoFixed_Main, row['moment_tot'], k, beta) # egf
 
-			################################
-			#### Analysis 3: Stack raw time series
-			################################	
-			ratio_array[:,egf_idx] = np.abs(ratio)/np.abs(ratio[0]) # save normalized (by 0th frequency) ratio values
-			egf_mom_array[egf_idx] = eqdata[eqdata['eq_id']==egf].moment_tot.item() # EGF moment
+				#### Save Data
+				dataout_list.append(
+					{'MAIN_ID': row.eq_id, 'EGF_ID':egf,'MinHZ': Hz[0], 'MaxHz': Hz[1], 'Fc_2_Mo_Main': est_fc_MoFixed_Main, 'SIG_2_Mo_Main': sigma_fc_est_Mofix_Main, 'Fc_2_Mo_EGF': est_fc_MoFixed_EGF, 'SIG_2_Mo_EGF': sigma_fc_est_Mofix_EGF})
 
 
-
-			
-			############ ############ ############ ############ ############ ############ ############ ############ ############ ############ 
-			egf_idx+=1
-		#### Stacking the averages
-		mean_EGF_mo = np.mean(egf_mom_array)
-		ratio_stack = np.mean(ratio_array,axis=1)*(row['moment_tot']/mean_EGF_mo) # stack and multiple to get relative amplitude differences
-
-
-
-			
-			
-		idx +=1
 	count_id+=1
-# 	if count_id > 5:
-# 		break
-
 
 ##### Save Data files
-print(egf_table)
-egffile =  path + '/egf_table.txt'
-egf_table.to_csv(egffile,sep=',',index=False)
-mainfile =  path + '/main_table.txt'
-main_table.to_csv(mainfile,sep=',',index=False)
+egf_table_df = pd.DataFrame(dataout_list)
+print(egf_table_df)
+egffile = path + '/EGFs' + '/' + 'EGFs.txt'
+egf_table_df.to_csv(egffile, sep=',', index=False)
 
 
 
