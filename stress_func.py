@@ -269,20 +269,25 @@ def bruneMod(f,coeffs):
 	
 def bruneModInvMoFixed(coeffs,y,f,Mo):
 	return  np.log10(bruneModMoFixed(f,coeffs,Mo)) - np.log10(y)
-	
-def bruneModInvMoFixedslopeFree(coeffs,y,f,Mo):
-	return  np.log10(bruneModMoFixedfslopeFree(f,coeffs,Mo)) - np.log10(y)
-	
-def bruneModInv_AllFree(coeffs,y,f):
-	return  np.log10(bruneModAllFree(f,coeffs)) - np.log10(y)
-	
+
 def bruneModMoFixed(f,coeffs,Mo):
 	return Mo/(1+(f/coeffs)**2) # Removed [0] after coeffs so may not work now. Double check
 	
+def bruneModInvMoFixedslopeFree(coeffs,y,f,Mo):
+	return  np.log10(bruneModMoFixedfslopeFree(f,coeffs,Mo)) - np.log10(y)
+
 def bruneModMoFixedfslopeFree(f,coeffs,Mo):
 	return Mo/(1+(f/coeffs[0])**coeffs[1])
+
+def bruneModInvMoFree(coeffs,y,f):
+	return  np.log10(bruneModMoFree(f,coeffs)) - np.log10(y)
+
+def bruneModMoFree(f,coeffs):
+	return coeffs[1]/(1+(f/coeffs[0])**2)
 	
-	
+def bruneModInv_AllFree(coeffs,y,f):
+	return  np.log10(bruneModAllFree(f,coeffs)) - np.log10(y)
+
 def bruneModAllFree(f,coeffs):
 	return coeffs[0]/(1+(f/coeffs[1])**coeffs[2])
 	
@@ -292,6 +297,13 @@ def ratio_bruneModInvMoFixed(coeffs,y,f,Mo_main,Mo_EGF):
 	
 def ratio_bruneModMoFixed(f,coeffs,Mo_main,Mo_EGF): # For ratio tests
 	return bruneModMoFixed(f,coeffs[0],Mo_main)/bruneModMoFixed(f,coeffs[1],Mo_EGF)
+
+
+def ratio_bruneModInvMoFree(coeffs, y, f):
+     return np.log10(ratio_bruneModMoFree(f, coeffs)) - np.log10(y)
+
+def ratio_bruneModMoFree(f, coeffs):  # For ratio tests
+    return coeffs[2]*bruneModMoFree(f, [coeffs[0],1]) / bruneModMoFree(f, [coeffs[1], 1])
 	
 def ratio_bruneModInvMoFixedslopeFree(coeffs,y,f,Mo_main,Mo_EGF):
 	return  np.log10(ratio_bruneModMoFixedslopeFree(f,coeffs,Mo_main,Mo_EGF)) - np.log10(y)
