@@ -26,14 +26,14 @@ cval = (1/(15*np.pi*ro*(alpha**5))+(1/(10*np.pi*ro*(beta**5)))) # constant param
 
 ##### Frequency Specific Variables
 log_samp = 0.025 # Log sampling for fitting spectral model
-HZ_Bands= [[.001,50],[.001,25],[.001,10],[.001,5],[.001,2]]
-# HZ_Bands= [[.001,50],[.01,25],[.1,10],[.1,5],[.5,2]] #  fitting range for brune model
+# HZ_Bands= [[.001,50],[.001,25],[.001,10],[.001,5],[.001,2]]
+HZ_Bands= [[.001,50],[.01,10],[.1,2]] #  fitting range for brune model
 
 
 
 
 ####### Path to STFs
-DataPath = '/Users/jamesneely/Documents/NSF/StressDrop_Bands/Brune_0.50SD_100HZ'
+DataPath = '/Users/jamesneely/Documents/NSF/StressDrop_Bands/Brune_0.50SD_100HZ_Uniform'
 
 eqfile = DataPath+'/eqFile.txt'
 eqdata = pd.read_csv(eqfile,sep='|')
@@ -73,7 +73,7 @@ for index, row in eqdata.iterrows():
 
 
 dataout = pd.DataFrame(dataout_list)
-datafile =  DataPath + '/FittingFile.csv'
+datafile =  DataPath + '/FittingFile_BANDS.csv'
 dataout.to_csv(datafile,sep=',',index=False)
 
 

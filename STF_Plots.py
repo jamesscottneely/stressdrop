@@ -16,10 +16,11 @@ def str2Array(params):
     params_array = [float(vals) for vals in strVal[1:-1].split(',')]
     return params_array
 
-EQ_ID = '202509301759246336_2983'#### Enter the EQ id for plotting
+EQ_ID = '202509301759246336_2139'#### Enter the EQ id for plotting
 eqdirs = 'Brune_0.50SD_100HZ_Uniform'
 path = "/Users/jamesneely/Documents/NSF/StressDrop_Bands/" +eqdirs
-maxHZ_i = 5
+maxHZ_i = 25
+HZ_Bands= [[.001,50],[.01,10],[.1,2]]
 ### Read in STF file
 STF_data = pd.read_csv(path+'/STFs/' +EQ_ID+ ".txt")
 
@@ -28,20 +29,17 @@ eqData = pd.read_csv(path+'/eqFile.txt',sep='|')
 eqData = eqData[eqData.eq_id==EQ_ID]
 print(eqData.iloc[0])
 ### Read in fitting data
-fitData = pd.read_csv(path+'/FittingFile.csv')
+fitData = pd.read_csv(path+'/FittingFile_Bands.csv')
 fitData = fitData[fitData.eq_id==EQ_ID]
-print(fitData.iloc[0])
 ### Read in EGF File
-egfData = pd.read_csv(path+ '/EGF_1MPa/EGF_1MPa.txt')
+egfData = pd.read_csv(path+ '/EGF_1MPa/EGF_1MPa_Bands.txt')
 egfData = egfData[egfData.MAIN_ID==EQ_ID]
 ##### Read in STF file
 STFData = pd.read_csv(path + "/STFs/" +EQ_ID +".txt")
-print(STFData)
 
 ###### Plot STF information
 fig,ax = plt.subplots(nrows=1,ncols=2,layout='constrained',figsize=(8,4))
 #### Plot time series
-print(eqData.t_i.values)
 # print(eqData.t_i.values[0])
 # Plot main STF
 ax[0].plot(STFData.time,STFData.STF,lw=3)
@@ -53,48 +51,70 @@ ax[0].plot(STFData.time,STFData.STF,lw=3)
 #     pulse_sub[pulse_sub < 0] = 0  # Remove negative values
 ax[0].set_xlabel('Time (s)')
 ax[0].set_ylabel('Moment Rate (N-m/s)')
-xmin = 500 + np.sum(str2Array(eqData.t_i)) -10
-xmax = 500 + np.max(str2Array(eqData.t_i)) +10
+xmin = 500 + np.sum(str2Array(eqData.t_i)) -4
+xmax = 500 + np.max(str2Array(eqData.t_i)) +4
 ax[0].set_xlim([xmin,xmax])
 textStr = r"$M_w$: {:.1f}".format(eqData.mw_tot.iloc[0]) +"\n"+ r"$\Delta\sigma_{{Area}}$: {:.1f}MPa".format(eqData.sigma_tot_area.iloc[0]) +"\n"+ r"$\Delta\sigma_{{Mo}}$: {:.1f}MPa".format(eqData.sigma_tot_moment.iloc[0])
 ax[0].text(0,.99,textStr,ha='left',va='top',transform=ax[0].transAxes)
-######
+###### ######
 ###### Plot the spectral amplitude
-######
+##################
 freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[0,maxHZ_i])
 ax[1].loglog(freq,amplitude)
-## Plot best fitting line
-bestBrune = sf.bruneMod(freq,[amplitude[0],fitData.iloc[0].Fc_2_Mo])
-specstr = r'$f_c$: {:.2f}hz'.format(fitData.iloc[0].Fc_2_Mo) + "\n" + r'$\Delta\sigma$: {:.1f}MPa'.format(fitData.iloc[0].SIG_2_Mo)
+
+fcval = 'Fc_2_MoFree'
+sigval = 'SIG_2_MoFree'
+moVal = 'Est_MoFree'
+
+################## Plot best fitting line 0
+specstr = r'$f_c$: {:.2f}hz '.format(fitData.iloc[0][fcval]) + r'$\Delta\sigma$: {:.1f}MPa'.format(fitData.iloc[0][sigval])
 ### TRim plot
-freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[0,maxHZ_i])
-bestBrune = sf.bruneMod(freq,[amplitude[0],fitData.iloc[0].Fc_2_Mo])
-ax[1].loglog(freq,bestBrune)
-ax[1].text(.99,.99,specstr,ha='right',va='top',transform=ax[1].transAxes)
+print([HZ_Bands[0][0],HZ_Bands[0][1]])
+freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[HZ_Bands[0][0],HZ_Bands[0][1]])
+bestBrune = sf.bruneMod(freq,[fitData.iloc[0][moVal],fitData.iloc[0][fcval]])
+ax[1].loglog(freq,bestBrune,label=specstr,lw=3)
+################## Plot best fitting line 1
+specstr = r'$f_c$: {:.2f}hz '.format(fitData.iloc[1][fcval]) + r'$\Delta\sigma$: {:.1f}MPa'.format(fitData.iloc[1][sigval])
+### TRim plot
+freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[HZ_Bands[1][0],HZ_Bands[1][1]])
+bestBrune = sf.bruneMod(freq,[fitData.iloc[1][moVal],fitData.iloc[1][fcval]])
+ax[1].loglog(freq,bestBrune,label=specstr,lw=2)
+#
+################## Plot best fitting line 2
+specstr = r'$f_c$: {:.2f}hz '.format(fitData.iloc[2][fcval]) + r'$\Delta\sigma$: {:.1f}MPa'.format(fitData.iloc[2][sigval])
+### TRim plot
+freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[HZ_Bands[2][0],HZ_Bands[2][1]])
+bestBrune = sf.bruneMod(freq,[fitData.iloc[2][moVal],fitData.iloc[2][fcval]])
+ax[1].loglog(freq,bestBrune,label=specstr,lw=1)
+#
+
+ax[1].legend()
+ax[1].set_xlim([.001,25])
 ax[1].set_xlabel("Frequency (Hz)")
 ax[1].set_ylabel("Moment (N-m)")
 
 
 ##### Save figure
-outFile= path + '/Figures/STF_' +EQ_ID +".png"
+outFile= '/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/STF_' +EQ_ID +".png"
 fig.savefig(outFile,dpi=500)
 
 
-######
+######################################################
 ###### Plot the EGF curves
 ######
 log_samp = 0.025
 ###### Plot STF information
 fig,ax = plt.subplots(nrows=1,ncols=2,layout='constrained',figsize=(8,4))
 
-egfData = egfData[egfData.MaxHz==maxHZ_i]
+egfData = egfData[egfData.MaxHz==10]
 mergeData = eqData.merge(egfData,how='inner',left_on='eq_id',right_on='MAIN_ID')
 mag_dif = 1.5
 mergeData = mergeData[(mergeData.eq_id==EQ_ID)]
-print(mergeData)
+print(mergeData.iloc[0])
 ######
 ###### Plot the spectral amplitude
 ######
+freq,amplitude,FT_complex = sf.sig_process(STFData.time.to_numpy(),STFData.STF.to_numpy(),[HZ_Bands[1][0],HZ_Bands[1][1]])
 ax[0].loglog(freq,amplitude)
 ### PLot Ratio 1
 fc_egf_mo = sf.mw2mo(mergeData['mw_tot'][0]-mag_dif)
@@ -171,7 +191,7 @@ ax[1].set_xlabel('Frequency (Hz)')
 
 
 
-outFile= path + '/Figures/EGF_' +EQ_ID +".png"
+outFile= '/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/EGF_' +EQ_ID +".png"
 fig.savefig(outFile,dpi=500)
 
 # print(egfData.iloc[0]) - Rerun and rename spec ratio files for STFs

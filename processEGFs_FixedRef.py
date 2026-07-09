@@ -10,7 +10,7 @@ import stress_func as sf
 import scipy.optimize as optimize
 
 ### File
-eqdirs = 'Brune_0.50SD_100HZ_Uniform'
+eqdirs = 'Brune_0.50SD_100HZ'
 mag_dif = 1.5# Minimum magnitude difference for earthquakes
 
 ### Read data
@@ -32,8 +32,8 @@ ref_stress = 1 # reference stress drop value for synthetic
 
 ##### Frequency Specific Variables
 log_samp = 0.025 # Log sampling for fitting spectral model
-HZ_Bands= [[.001,50],[.001,25],[.001,10],[.001,5],[.001,2]]
-
+# HZ_Bands= [[.001,50],[.001,25],[.001,10],[.001,5],[.001,2]]
+HZ_Bands= [[.001,50],[.01,10],[.1,2]]
 ##### Create Out Pandas tables for data
 dataout_list = []
 tot_num = len(eqdata)
@@ -131,7 +131,7 @@ for index, row in eqdata.iterrows():
 
 ##### Save Data files
 egf_table_df = pd.DataFrame(dataout_list)
-egffile = path + '/EGF_1MPa' + '/' + 'EGF_1MPa.txt'
+egffile = path + '/EGF_1MPa' + '/' + 'EGF_1MPa_Bands.txt'
 egf_table_df.to_csv(egffile, sep=',', index=False)
 print(egf_table_df.iloc[0])
 
