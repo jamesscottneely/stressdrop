@@ -82,7 +82,7 @@ def spec_ratio(main,egf,main_mo,egf_mo,freq,log_samp):
 
 
 #### hz band
-HZ_Bands = [.01,.5]
+HZ_Bands = [.01,5]
 
 #### Generate Pulse 1
 numPulse = 3
@@ -98,18 +98,18 @@ freq_1,amplitude_1,FT_complex = sf.sig_process(t,pulse_sum_1,[HZ_Bands[0],HZ_Ban
 numPulse = 2
 totalMw_2 = 5
 pulseMomentpercent = np.array([.9,.1])
-pulseStressDrop = np.array([1,10])
+pulseStressDrop = np.array([10,10])
 pulseTime = np.array([0,.5])
 mo_main_2,moment_sub_2,radii_sub_2,area_sub_2,fc_sub_2,pulse_sub_2,pulse_sum_2,sigma_Mo_2,sigma_area_2 = genSynth(numPulse,totalMw_2,pulseMomentpercent,pulseStressDrop,pulseTime)
 freq_2,amplitude_2,FT_complex = sf.sig_process(t,pulse_sum_2,[HZ_Bands[0],HZ_Bands[1]])
 
 
 #### Generate Pulse 3
-numPulse = 2
+numPulse = 3
 totalMw_3 = 7
-pulseMomentpercent = np.array([.3,.7])
-pulseStressDrop = np.array([10,1])
-pulseTime = np.array([0,1])
+pulseMomentpercent = np.array([.7,.3,.1])
+pulseStressDrop = np.array([10,10,1])
+pulseTime = np.array([0,1,1.5])
 mo_main_3,moment_sub_3,radii_sub_3,area_sub_3,fc_sub_3,pulse_sub_3,pulse_sum_3,sigma_Mo_3,sigma_area_3 = genSynth(numPulse,totalMw_3,pulseMomentpercent,pulseStressDrop,pulseTime)
 freq_3,amplitude_3,FT_complex = sf.sig_process(t,pulse_sum_3,[HZ_Bands[0],HZ_Bands[1]])
 
@@ -193,6 +193,7 @@ ax[6].axvline(ratio_2[4],color='red',ls='--')
 ax[6].legend()
 
 
+# est_fc_MoFixed_Main,est_fc_MoFixed_EGF,sigma_fc_est_Mofix_Main,sigma_fc_est_Mofix_EGF,est_fc_MoFree_Main,est_fc_MoFree_EGF,MoFree_ratio,sigma_fc_est_MoFree_Main,sigma_fc_est_MoFree_EGF]
 
 ax[7].loglog(freq_1,amplitude_1/amplitude_2,color='green',lw=3,label='MW: {:.1f}/MW: {:.1f} MAIN'.format(totalMw_1,totalMw_2))
 ax[7].loglog(freq_1,sim_brune_large/amplitude_1,color='purple',lw=3,label='MW: {:.1f}, Sig: {:.1f}MPa/MW: {:.1f} EGF'.format(simp_mw_large,simp_stress_large,totalMw_1))
