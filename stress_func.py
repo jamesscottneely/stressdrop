@@ -555,3 +555,5 @@ def EGF_energy_ratio(M_Mo,M_fc,M_n,E_Mo,E_fc,E_n,sig,freq,ro,alpha,beta):
 	model = ratio_bruneModMoFixedslopeFree(freq,[M_fc,M_n,E_fc,E_n],M_Mo,E_Mo)
 	re_model = radE_STF_freq(model,freq,ro,alpha,beta)
 	return re_sig/re_model
+
+

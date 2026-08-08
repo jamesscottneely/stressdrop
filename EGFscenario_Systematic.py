@@ -82,40 +82,40 @@ def spec_ratio(main,egf,main_mo,egf_mo,freq,log_samp):
 
 
 #### hz band
-HZ_Bands = [.01,1]
+HZ_Bands = [.05,5]
 
 #### Generate Pulse 1
 numPulse = 2
 totalMw_1 = 6
-pulseMomentpercent1 = np.array([.7,.3])
-pulseStressDrop1 = np.array([1,2])
+pulseMomentpercent1 = np.array([.5,.5])
+pulseStressDrop1 = np.array([1,1])
 pulseTime = np.array([0,2])
 mo_main_1,moment_sub_1,radii_sub_1,area_sub_1,fc_sub_1,pulse_sub_1,pulse_sum_1,sigma_Mo_1,sigma_area_1 = genSynth(numPulse,totalMw_1,pulseMomentpercent1,pulseStressDrop1,pulseTime)
 freq_1,amplitude_1,FT_complex = sf.sig_process(t,pulse_sum_1,[HZ_Bands[0],HZ_Bands[1]])
 
 
 #### Generate Pulse 2
-numPulse = 2
-totalMw_2 = 5
-pulseMomentpercent2 = np.array([.7,.3])
-pulseStressDrop2 = np.array([1,1])
-pulseTime = np.array([0,.5])
-mo_main_2,moment_sub_2,radii_sub_2,area_sub_2,fc_sub_2,pulse_sub_2,pulse_sum_2,sigma_Mo_2,sigma_area_2 = genSynth(numPulse,totalMw_2,pulseMomentpercent2,pulseStressDrop2,pulseTime)
-freq_2,amplitude_2,FT_complex = sf.sig_process(t,pulse_sum_2,[HZ_Bands[0],HZ_Bands[1]])
-
-
-#### Generate Pulse 3
-numPulse = 3
-totalMw_3 = 7
-pulseMomentpercent3 = np.array([.7,.3,.1])
-pulseStressDrop3 = np.array([10,10,1])
-pulseTime = np.array([0,1,1.5])
-mo_main_3,moment_sub_3,radii_sub_3,area_sub_3,fc_sub_3,pulse_sub_3,pulse_sum_3,sigma_Mo_3,sigma_area_3 = genSynth(numPulse,totalMw_3,pulseMomentpercent3,pulseStressDrop3,pulseTime)
-freq_3,amplitude_3,FT_complex = sf.sig_process(t,pulse_sum_3,[HZ_Bands[0],HZ_Bands[1]])
+# numPulse = 2
+# totalMw_2 = 5
+# pulseMomentpercent2 = np.array([.9,.1])
+# pulseStressDrop2 = np.array([10,10])
+# pulseTime = np.array([0,.5])
+# mo_main_2,moment_sub_2,radii_sub_2,area_sub_2,fc_sub_2,pulse_sub_2,pulse_sum_2,sigma_Mo_2,sigma_area_2 = genSynth(numPulse,totalMw_2,pulseMomentpercent2,pulseStressDrop2,pulseTime)
+# freq_2,amplitude_2,FT_complex = sf.sig_process(t,pulse_sum_2,[HZ_Bands[0],HZ_Bands[1]])
+#
+#
+# #### Generate Pulse 3
+# numPulse = 2
+# totalMw_3 = 7
+# pulseMomentpercent3 = np.array([.7,.3,.1])
+# pulseStressDrop3 = np.array([10,10,1])
+# pulseTime = np.array([0,1,1.5])
+# mo_main_3,moment_sub_3,radii_sub_3,area_sub_3,fc_sub_3,pulse_sub_3,pulse_sum_3,sigma_Mo_3,sigma_area_3 = genSynth(numPulse,totalMw_3,pulseMomentpercent3,pulseStressDrop3,pulseTime)
+# freq_3,amplitude_3,FT_complex = sf.sig_process(t,pulse_sum_3,[HZ_Bands[0],HZ_Bands[1]])
 
 ##### generate simple pulses
 mag_dif = 1
-simp_stress_small = 10
+simp_stress_small = 1
 simp_stress_large = 10
 sim_brune_small,simp_fc_small,simp_mo_small,simp_mw_small = brune_Gen(totalMw_1,mag_dif,-1,simp_stress_small,freq_1)
 sim_brune_large,simp_fc_large,simp_mo_large,simp_mw_large = brune_Gen(totalMw_1,mag_dif,1,simp_stress_large,freq_1)
@@ -257,6 +257,6 @@ ax[8].legend()
 
 
 fig.tight_layout()
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/EGFAnalysis/EGFPlot_'+'{:.3f}Hz_{:.3f}HZ_'.format(HZ_Bands[0],HZ_Bands[1])+'.png',dpi=500)
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/EGFAnalysis/EGFPlot_Systematic_'+'{:.3f}Hz_{:.3f}HZ_'.format(HZ_Bands[0],HZ_Bands[1])+'.png',dpi=500)
 
 
