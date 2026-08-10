@@ -55,7 +55,7 @@ def bestfitLine_loglog(x_var,y_var,ax,color):
     slope_error, intercept_error = np.sqrt(np.diag(covariance_matrix))
     x = (np.arange(min(np.log10(x_var)),max(np.log10(x_var)),.1))
     ax.plot(10**x, 10**(m * x + b), color=color, label="slope:{:.2f}, [{:.2f},{:.2f}]".format(m,m-2*slope_error,m+2*slope_error))
-    return ax
+    return ax,m,slope_error
 
 
 ###### DataPath
@@ -79,45 +79,51 @@ merge_df = truth.merge(estimate, how='inner',on='eq_id')
 #### Create plot type 1
 ####################
 
-fig,ax = plt.subplots(nrows=1,ncols=2,figsize=(10,4),sharey=True)
-### Plot the truth
-ax[0].semilogy(merge_df[merge_df.MaxHz==50].mw_tot,merge_df[merge_df.MaxHz==50].sigma_tot_area,'o',alpha=.1)
-median_bin(merge_df.mw_tot,merge_df.sigma_tot_area, ax[0])
-# bestfitLine(4,5.5,merge_df.mw_tot,merge_df.sigma_tot_area,ax[0],'red')
-# bestfitLine(4,6,merge_df.mw_tot,merge_df.sigma_tot_area,ax[0],'purple')
-bestfitLine(4,7,merge_df.mw_tot,merge_df.sigma_tot_area,ax[0],'orange')
-med = np.median(merge_df.sigma_tot_area)
-sd_ln = np.std(np.log(merge_df.sigma_tot_area))
-textstr = "Med: {:.1f} ln_sd: {:.1f}".format(med,sd_ln)
-ax[0].text(.99,.01,textstr,ha='right',va='bottom',transform=ax[0].transAxes)
-ax[0].legend()
-ax[0].set_xlabel('Mw')
+fig,ax = plt.subplots(nrows=1,ncols=2,figsize=(15,4),sharey=True, constrained_layout=True)
+#### Plot the true values
+p1 = ax[0].semilogy(merge_df[merge_df.MaxHz==50].moment_tot,merge_df[merge_df.MaxHz==50].sigma_tot_area,'o',alpha=.1)
+axtemp,m,slope_error = bestfitLine_loglog(merge_df[merge_df.MaxHz==50].moment_tot,merge_df[merge_df.MaxHz==50].sigma_tot_area , ax[0], 'orange')
+ax[0].set_xscale('log')
+ax[0].set_yscale('log')
+ax[0].set_xlabel('Mo')
 ax[0].set_ylabel(r'$\Delta\sigma$ (True - Area) MPa')
+# ax[0].set_title(
 ax[0].set_title("Synth. (Area-Weighted)")
-ylim = [5e-2,3e1]
-ax[0].set_ylim(ylim)
-### Plot the truth
-ax[1].semilogy(merge_df[merge_df.MaxHz==50].mw_tot,merge_df[merge_df.MaxHz==50].sigma_tot_moment,'o',alpha=.1)
-median_bin(merge_df.mw_tot,merge_df.sigma_tot_moment, ax[1])
-# bestfitLine(4,5.5,merge_df.mw_tot,merge_df.sigma_tot_moment,ax[1],'red')
-# bestfitLine(4,6,merge_df.mw_tot,merge_df.sigma_tot_moment,ax[1],'purple')
-bestfitLine(4,maxmag,merge_df.mw_tot,merge_df.sigma_tot_moment,ax[1],'orange')
-med = np.median(merge_df.sigma_tot_moment)
-sd_ln = np.std(np.log(merge_df.sigma_tot_moment))
-textstr = "Med: {:.1f} ln_sd: {:.1f}".format(med,sd_ln)
-ax[1].text(.99,.01,textstr,ha='right',va='bottom',transform=ax[1].transAxes)
-ax[1].set_xlabel('Mw')
+ax[0].set_xlim([5e15, 2e22])
+med = np.median(merge_df[merge_df.MaxHz==50].sigma_tot_area)
+sd_ln = np.std(np.log(merge_df[merge_df.MaxHz==50].sigma_tot_area))
+textstr = "Slope: {:.2f} +/-: {:.2f}".format(m,slope_error)
+ax[1].text(.99,.01,textstr,ha='right',va='bottom',transform=ax[0].transAxes)
+ax[1].set_ylim([5e-2,5e1])
+ax2 = ax[0].secondary_xaxis('top', functions=(sf.mo2mw,sf.mw2mo))
+median_bin(merge_df[merge_df.MaxHz==50].mw_tot, merge_df[merge_df.MaxHz==50].sigma_tot_area , ax[0])
+ax2.set_xscale('linear')
+ax2.set_xlabel('Mw')
+
+#### Plot the true values
+p2 = ax[1].semilogy(merge_df[merge_df.MaxHz==50].moment_tot,merge_df[merge_df.MaxHz==50].sigma_tot_moment,'o',alpha=.1)
+axtemp,m,slope_error = bestfitLine_loglog(merge_df[merge_df.MaxHz==50].moment_tot,merge_df[merge_df.MaxHz==50].sigma_tot_moment , ax[1], 'orange')
+ax[1].set_xscale('log')
+ax[1].set_yscale('log')
+ax[1].set_xlabel('Mo')
 ax[1].set_ylabel(r'$\Delta\sigma$ (True - Mo) MPa')
 ax[1].set_title("Synth. (Mo-Weighted)")
-# ax[1].set_ylim(ylim)
-ax[1].legend()
-fig.tight_layout()
+med = np.median(merge_df[merge_df.MaxHz==50].sigma_tot_moment)
+sd_ln = np.std(np.log(merge_df[merge_df.MaxHz==50].sigma_tot_moment))
+textstr = "Slope: {:.2f} +/-: {:.2f}".format(m,slope_error)
+ax[1].text(.99,.01,textstr,ha='right',va='bottom',transform=ax[1].transAxes)
+ax[1].set_xlim([5e15, 2e22])
 
+ax3 = ax[1].secondary_xaxis('top', functions=(sf.mo2mw,sf.mw2mo))
+median_bin(merge_df[merge_df.MaxHz==50].mw_tot, merge_df[merge_df.MaxHz==50].sigma_tot_moment, ax[1])
+ax3.set_xscale('linear')
+ax3.set_xlabel('Mw')
 
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/'+'SSA_StressDropTrends_GR_'+dcat+band+'.png',dpi=300)
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SCEC_2026_Figures/'+'SCEC_StressDropTrends_GR_'+dcat+band+'.png',dpi=300)
 ####### ####### ####### ####### ####### #######
 ####### ####### ####### ####### ####### #######
 ####### ####### ####### ####### ####### #######
+
 
 ####### ####### ####### ####### ####### #######
 ####### PLot 2: What are are measuring
@@ -171,15 +177,15 @@ plt.colorbar(p2, label=cval)
 ax[1].set_xscale('log')
 ax[1].set_yscale('log')
 fig.tight_layout()
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/'+'SSA_StressDrop_Measure_FixMo_FitHZ_'+str(HZ_low)+'_'+str(HZ_high)+'_'+dcat+band+'.png',dpi=300)
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-
-
-####### ####### ####### ####### ####### #######
-####### PLot 2: What are are measuring - Free mo
-####### ####### ####### ####### ####### #######
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SCEC_2026_Figures/'+'SCEC_StressDrop_Measure_FixMo_FitHZ_'+str(HZ_low)+'_'+str(HZ_high)+'_'+dcat+band+'.png',dpi=300)
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+#
+#
+# ####### ####### ####### ####### ####### #######
+# ####### PLot 2: What are are measuring - Free mo
+# ####### ####### ####### ####### ####### #######
 
 fig,ax = plt.subplots(nrows=1,ncols=2,figsize=(10,4),sharey=True)
 ### Plot the truth
@@ -215,15 +221,15 @@ plt.colorbar(p2, label=cval)
 ax[1].set_xscale('log')
 ax[1].set_yscale('log')
 fig.tight_layout()
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/'+'SSA_StressDrop_Measure_FreeMo_FitHZ_'+str(HZ_low)+"_"+str(HZ_high)+"_"+dcat+band+'.png',dpi=300)
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-
-####### ####### ####### ####### ####### #######
-####### PLot 3: Impact of Limited bandwidth
-####### ####### ####### ####### ####### #######
-fig,ax = plt.subplots(nrows=3,ncols=3,figsize=(30,15),sharex=True)
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SCEC_2026_Figures/'+'SCEC_StressDrop_Measure_FreeMo_FitHZ_'+str(HZ_low)+"_"+str(HZ_high)+"_"+dcat+band+'.png',dpi=300)
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+#
+# ####### ####### ####### ####### ####### #######
+# ####### PLot 3: Impact of Limited bandwidth
+# ####### ####### ####### ####### ####### #######
+fig,ax = plt.subplots(nrows=3,ncols=3,figsize=(20,10),sharex=True)
 ### Loop through band plots
 for idx in np.arange(0,3,1):
     ### merge file
@@ -247,14 +253,14 @@ for idx in np.arange(0,3,1):
     ax2 = ax[idx, 0].secondary_xaxis('top', functions=(sf.mo2mw,sf.mw2mo))
     median_bin(merge_dfTEMP.mw_tot, merge_dfTEMP.SIG_2_Mo, ax[idx, 0])
     ax2.set_xlabel('Mw')
-
+    ax2.set_xscale('linear')
 
     #### PLot FC values
     p2 = ax[idx,1].scatter(merge_dfTEMP.moment_tot, merge_dfTEMP.Fc_2_Mo, c=merge_dfTEMP[cval], cmap='viridis',alpha=.5)
     plt.colorbar(p2, label=cval)
     # bestfitLine(4, maxmag, merge_dfTEMP.moment_tot, merge_dfTEMP.Fc_2_Mo, ax[idx, 1], 'orange')
     ax[idx,1].set_xlabel('Mo')
-    ax[idx, 1].set_xlim([5e15, 5e21])
+    ax[idx, 1].set_xlim([5e15, 2e22])
 
     ax[idx,1].set_ylabel(r'$f_c$ (Hz)')
     # ax[idx+1,1].axhline(HZ_Bands[idx][0],ls='--',color='red')
@@ -268,12 +274,12 @@ for idx in np.arange(0,3,1):
     ax2 = ax[idx, 1].secondary_xaxis('top', functions=(sf.mo2mw,sf.mw2mo))
     median_bin(merge_dfTEMP.mw_tot, merge_dfTEMP.Fc_2_Mo, ax[idx, 1])
     ax2.set_xlabel('Mw')
-
+    ax2.set_xscale('linear')
     #### PLot mo vs stress drop
     p3 = ax[idx, 2].scatter(merge_dfTEMP.moment_tot,merge_dfTEMP.SIG_2_Mo/merge_dfTEMP.sigma_tot_moment , c=merge_dfTEMP[cval], cmap='viridis',alpha=.5)
     plt.colorbar(p3, label=cval)
     ax[idx, 2].set_xscale('log')
-    ax[idx, 2].set_xlim([5e15, 5e21])
+    ax[idx, 2].set_xlim([5e15, 2e22])
 
     ax[idx, 2].set_xlabel('Mo')
     ax[idx, 2].set_ylabel(r'$\Delta\sigma$/$\Delta\sigma_{mo}$')
@@ -282,20 +288,21 @@ for idx in np.arange(0,3,1):
     ax2 = ax[idx, 2].secondary_xaxis('top', functions=(sf.mo2mw,sf.mw2mo))
     median_bin(merge_dfTEMP.mw_tot,  merge_dfTEMP.SIG_2_Mo/merge_dfTEMP.sigma_tot_moment, ax[idx, 2])
     ax2.set_xlabel('Mw')
-    ax[idx, 2].set_ylim([0.1,2.5])
+    ax[idx, 2].set_ylim([0.05,2.5])
+    ax2.set_xscale('linear')
 
 
 
 fig.tight_layout()
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/'+'SSA_MW_MoFixed_'+dcat+band+'.png',dpi=300)
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-
-####### ####### ####### ####### ####### #######
-####### PLot 5: Impact of Free moment fit
-####### ####### ####### ####### ####### #######
-fig,ax = plt.subplots(nrows=3,ncols=3,figsize=(30,15),sharex=True)
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SCEC_2026_Figures/'+'SCEC_MW_MoFixed_'+dcat+band+'.png',dpi=300)
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+# ####### ####### ####### ####### ####### #######
+#
+# ####### ####### ####### ####### ####### #######
+# ####### PLot 5: Impact of Free moment fit
+# ####### ####### ####### ####### ####### #######
+fig,ax = plt.subplots(nrows=3,ncols=3,figsize=(20,10),sharex=True)
 ### Loop through band plots
 for idx in np.arange(0,3,1):
     ### merge file
@@ -305,7 +312,7 @@ for idx in np.arange(0,3,1):
 
     #### PLot mo vs stress drop
     ax[idx, 0].set_ylim([5e-2, 5e1])
-    ax[idx, 0].set_xlim([5e15, 5e21])
+    ax[idx, 0].set_xlim([5e15, 2e22])
     p1 = ax[idx, 0].scatter(merge_dfTEMP.Est_MoFree,merge_dfTEMP.SIG_2_MoFree ,c=merge_dfTEMP[cval], cmap='viridis',alpha=.5)
     plt.colorbar(p1, label=cval)
     bestfitLine_loglog(merge_dfTEMP.Est_MoFree,merge_dfTEMP.SIG_2_MoFree , ax[idx, 0], 'orange')
@@ -327,7 +334,7 @@ for idx in np.arange(0,3,1):
     plt.colorbar(p2, label=cval)
     ax[idx,1].set_xlabel('Mo')
     ax[idx,1].set_ylabel(r'$f_c$ (Hz)')
-    ax[idx, 1].set_xlim([5e15, 5e21])
+    ax[idx, 1].set_xlim([5e15, 2e22])
     # ax[idx+1,1].axhline(HZ_Bands[idx][0],ls='--',color='red')
     ax[idx,1].axhline(HZ_Bands[idx][0],ls='--',color='red')
     ax[idx,1].set_xscale('log')
@@ -346,7 +353,7 @@ for idx in np.arange(0,3,1):
     p3 = ax[idx, 2].scatter(merge_dfTEMP.Est_MoFree,merge_dfTEMP.SIG_2_MoFree/merge_dfTEMP.sigma_tot_moment , c=merge_dfTEMP[cval], cmap='viridis',alpha=.5)
     plt.colorbar(p3, label=cval)
     ax[idx, 2].set_xscale('log')
-    ax[idx, 2].set_xlim([5e15, 5e21])
+    ax[idx, 2].set_xlim([5e15, 2e22])
     ax[idx, 2].set_xlabel('Mo')
     ax[idx, 2].set_ylabel(r'$\Delta\sigma$/$\Delta\sigma_{mo}$')
     ax[idx, 2].set_title("Frequency Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0], HZ_Bands[idx][1]))
@@ -358,255 +365,9 @@ for idx in np.arange(0,3,1):
     ax2.set_xscale('linear')
     ax[idx, 2].set_ylim([0.1,6])
 fig.tight_layout()
-fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/'+'SSA_MW_MoFree_'+dcat+band+'.png',dpi=300)
+fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SCEC_2026_Figures/'+'SCEC_MW_MoFree_'+dcat+band+'.png',dpi=300)
 ####### ####### ####### ####### ####### #######
 ####### ####### ####### ####### ####### #######
 ####### ####### ####### ####### ####### #######
 
 
-####### ####### ####### ####### ####### #######
-####### Plot 6: EGF (1 MPa) Comparison - Fixed Mo
-####### ####### ####### ####### ####### #######
-
-##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGF_1MPa/EGF_1MPa"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].loglog(merge_dfTEMP.SIG_2_Mo_Main_comp_simp, merge_dfTEMP.SIG_2_Mo_EGF_simp_comp,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$\Delta\sigma$ (As EGF)')
-#     ax[idx].set_xlabel(r'$\Delta\sigma$ (As Main)')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].plot([5e-3, 5e1], [5e-3, 5e1], ls='--', color='red')
-# ax[0].set_ylim([5e-3,5e1])
-# ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Simp_MoFixed_'+dcat+band+'.png',dpi=300)
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 7: EGF (1 MPa) Comparison - Free Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGF_1MPa/EGF_1MPa"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].loglog(merge_dfTEMP.SIG_2_MoFree_Main_comp_simp, merge_dfTEMP.SIG_2_MoFree_EGF_simp_comp,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$\Delta\sigma$ (As EGF)')
-#     ax[idx].set_xlabel(r'$\Delta\sigma$ (As Main)')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].plot([5e-3, 5e1], [5e-3, 5e1], ls='--', color='red')
-# ax[0].set_ylim([5e-3,5e1])
-# ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Simp_MoFree_'+dcat+band+'.png',dpi=300)
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 8: EGF (complex) Comparison - fixed Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"EGFs/EGFs"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12),sharex=True)
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     grouped_df_MAIN = merge_dfTEMP.groupby(['MAIN_ID'])['SIG_2_Mo_Main'].apply(scipy.stats.gmean).reset_index()
-#     grouped_df_EGF = merge_dfTEMP.groupby(['EGF_ID'])['SIG_2_Mo_EGF'].apply(scipy.stats.gmean).reset_index()
-#     regroup_final = grouped_df_MAIN.merge(grouped_df_EGF,left_on='MAIN_ID',right_on='EGF_ID',how='inner')
-#     #### Fix n=2
-#     ax[idx].loglog(regroup_final.SIG_2_Mo_Main, regroup_final.SIG_2_Mo_EGF,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$\Delta\sigma$ (As EGF)')
-#     ax[idx].set_xlabel(r'$\Delta\sigma$ (As Main)')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].plot([5e-3, 5e1], [5e-3, 5e1], ls='--', color='red')
-# ax[0].set_ylim([5e-3,5e1])
-# ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Complex_MoFixed_'+dcat+band+'.png',dpi=300)
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 9: EGF (complex) Comparison - free Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"EGFs/EGFs"+band+".txt")
-# # finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12),sharex=True)
-# ### Plot the truth
-#
-# print(EGFs.iloc[0])
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print("Next")
-#     print(idx)
-#     merge_dfTEMP = EGFs[(EGFs.MinHZ==HZ_Bands[idx][0]) & (EGFs.MaxHz==HZ_Bands[idx][1])]
-#     grouped_df_MAIN = merge_dfTEMP.groupby(['MAIN_ID'])['SIG_2_MoFree_Main'].apply(scipy.stats.gmean).reset_index()
-#     print(grouped_df_MAIN)
-#     grouped_df_EGF = merge_dfTEMP.groupby(['EGF_ID'])['SIG_2_MoFree_EGF'].apply(scipy.stats.gmean).reset_index()
-#     print(grouped_df_EGF)
-#     regroup_final = grouped_df_MAIN.merge(grouped_df_EGF,left_on='MAIN_ID',right_on='EGF_ID',how='inner')
-#     #### Fix n=2
-#     ax[idx].loglog(regroup_final.SIG_2_MoFree_Main, regroup_final.SIG_2_MoFree_EGF,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$\Delta\sigma$ (As EGF)')
-#     ax[idx].set_xlabel(r'$\Delta\sigma$ (As Main)')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].plot([5e-3, 5e1], [5e-3, 5e1], ls='--', color='red')
-# ax[0].set_ylim([5e-3,5e1])
-# ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Complex_MoFree_'+dcat+band+'.png',dpi=300)
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 10: EGF (1 MPa) Comparison - Fixed Mo
-# ####### ####### ####### ####### ####### #######
-
-##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGF_1MPa/EGF_1MPa"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].semilogy(merge_dfTEMP.mw_tot,merge_dfTEMP.Fc_2_Mo_Main_comp_simp/merge_dfTEMP.Fc_2_Mo_EGF_simp_comp,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$f_c$ Ratio (Main/EGF)')
-#     ax[idx].set_xlabel('Mw')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].axhline(1, ls='--', color='red')
-#     ax[idx].set_ylim([0, 2])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Simp_MoFixed_MOPLOT_'+dcat+band+'.png',dpi=300)
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 11: EGF (1 MPa) Comparison - Free Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGF_1MPa/EGF_1MPa"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].semilogy(merge_dfTEMP.mw_tot,merge_dfTEMP.Fc_2_MoFree_Main_comp_simp/merge_dfTEMP.Fc_2_MoFree_EGF_simp_comp,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$f_c$ Ratio (Main/EGF)')
-#     ax[idx].set_xlabel('Mw')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].axhline(0, ls='--', color='red')
-#     ax[idx].set_ylim([0, 2])
-#
-# # ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Simp_MoFree_MOPLOT_'+dcat+band+'.png',dpi=300)
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 11: EGF (Complex) Comparison - Fixed Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGFs/EGFs"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].semilogy(merge_dfTEMP.mw_tot,merge_dfTEMP.Fc_2_Mo_Main/merge_dfTEMP.Fc_2_Mo_EGF,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$f_c$ Ratio (Main/EGF)')
-#     ax[idx].set_xlabel('Mw')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].axhline(1, ls='--', color='red')
-#     ax[idx].set_ylim([0, 2])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Complex_MoFixed_MOPLOT_'+dcat+band+'.png',dpi=300)
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-# ####### ####### ####### ####### ####### #######
-#
-#
-#
-# ####### ####### ####### ####### ####### #######
-# ####### Plot 11: EGF (1 MPa) Comparison - Free Mo
-# ####### ####### ####### ####### ####### #######
-#
-# ##### Pull EGFs
-# EGFs = pd.read_csv(dataPath +"/EGFs/EGFs"+band+".txt")
-# finalMerge = pd.merge(truth,EGFs,right_on=['MAIN_ID'],left_on=['eq_id'],how='left',suffixes=('_Truth','_RatioFit'))
-# print(finalMerge)
-# fig,ax = plt.subplots(nrows=3,ncols=1,figsize=(6,12))
-# ### Plot the truth
-# ### Loop through band plots
-# for idx in np.arange(0,3,1):
-#     print(idx)
-#     merge_dfTEMP = finalMerge[(finalMerge.MinHZ==HZ_Bands[idx][0]) & (finalMerge.MaxHz==HZ_Bands[idx][1])]
-#     #### Fix n=2
-#     ax[idx].semilogy(merge_dfTEMP.mw_tot,merge_dfTEMP.Fc_2_MoFree_Main/merge_dfTEMP.Fc_2_MoFree_EGF,'o', alpha=.1)
-#     ax[idx].set_ylabel(r'$f_c$ Ratio (Main/EGF)')
-#     ax[idx].set_xlabel('Mw')
-#     ax[idx].set_title("Spec Ratio Comp=Main vs EGF Range [{:.1e},{:.1e}] Hz".format(HZ_Bands[idx][0],HZ_Bands[idx][1]))
-#     ax[idx].axhline(0, ls='--', color='red')
-#     ax[idx].set_ylim([0, 2])
-#
-# # ax[0].set_xlim([5e-3,5e1])
-# fig.tight_layout()
-# fig.savefig('/Users/jamesneely/Documents/NSF/StressDrop_Bands/SSA_2026_Figures/SSA_EGF_Complex_MoFree_MOPLOT_'+dcat+band+'.png',dpi=300)
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
-####### ####### ####### ####### ####### #######
